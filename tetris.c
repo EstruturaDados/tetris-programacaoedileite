@@ -1,9 +1,112 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 // Desafio Tetris Stack
 // Tema 3 - Integração de Fila e Pilha
 // Este código inicial serve como base para o desenvolvimento do sistema de controle de peças.
 // Use as instruções de cada nível para desenvolver o desafio.
+
+#define MAX 5  // Capacidade máxima da fila
+
+// Estrutura para representar uma peça do Tetris
+typedef struct {
+    char Nome;  // Tipo da peça: 'I', 'O', 'T', 'L'
+    int Id;     // Identificador único
+} Peca;
+
+// Estrutura da fila circular
+typedef struct {
+    Peca itens[MAX];
+    int Inicio;
+    int Fim;
+    int Total;
+} Fila;
+
+// Função para inicializar a fila
+void inicializarFila(Fila *f) {
+    f->Inicio = 0;
+    f->Fim = 0;
+    f->Total = 0;
+}
+
+// Função para verificar se a fila está vazia
+int filaVazia(Fila *f) {
+    return f->Total == 0;
+}
+
+// Função para verificar se a fila está cheia
+int filaCheia(Fila *f) {
+    return f->Total == MAX;
+}
+
+// Função para gerar uma nova peça aleatória
+Peca gerarPeca(int id) {
+    Peca NovaPeca;
+    char Tipos[] = {'I', 'O', 'T', 'L'};
+    
+    // Gera um tipo aleatório
+    int Indice = rand() % 4;
+    NovaPeca.Nome = Tipos[Indice];
+    NovaPeca.Id = id;
+    
+    return NovaPeca;
+}
+
+// Função para inserir uma peça na fila (enqueue)
+void inserir(Fila *f, Peca p) {
+    if (filaCheia(f)) {
+        printf("Fila cheia. Não é possível inserir.\n");
+        return;
+    }
+    
+    f->itens[f->Fim] = p;
+    f->Fim = (f->Fim + 1) % MAX;  // Atualização circular
+    f->Total++;
+}
+
+// Função para remover uma peça da fila (dequeue)
+Peca remover(Fila *f) {
+    Peca pecaVazia = {' ', -1};  // Peça vazia para indicar erro
+    
+    if (filaVazia(f)) {
+        printf("Fila vazia. Não é possível remover.\n");
+        return pecaVazia;
+    }
+    
+    Peca pecaRemovida = f->itens[f->Inicio];
+    f->Inicio = (f->Inicio + 1) % MAX;  // Atualização circular
+    f->Total--;
+    
+    return pecaRemovida;
+}
+
+// Função para exibir o estado atual da fila
+void mostrarFila(Fila *f) {
+    printf("\n=== FILA DE PEÇAS ===\n");
+    
+    if (filaVazia(f)) {
+        printf("Fila vazia.\n");
+        return;
+    }
+    
+    printf("Ordem: ");
+    int i, idx;
+    for (i = 0, idx = f->Inicio; i < f->Total; i++, idx = (idx + 1) % MAX) {
+        printf("[%c %d] ", f->itens[idx].Nome, f->itens[idx].Id);
+    }
+    printf("\n");
+}
+
+// Função para exibir o menu de opções
+void mostrarMenu() {
+    printf("\n=== TETRIS STACK  ===\n");
+    printf("Opções disponíveis:\n");
+    printf("1 - Jogar peça (dequeue)\n");
+    printf("2 - Inserir nova peça (enqueue)\n");
+    printf("0 - Sair\n");
+    printf("Escolha uma opção: ");
+}
 
 int main() {
 
@@ -49,7 +152,69 @@ int main() {
     // - O menu deve ficar assim:
     //      4 - Trocar peça da frente com topo da pilha
     //      5 - Trocar 3 primeiros da fila com os 3 da pilha
-
+    Fila filaPecas;
+    int Opcao;
+    int ProximoId = 0;
+    
+    // Inicializa o gerador de números aleatórios
+    srand(time(NULL));
+    
+    // Inicializa a fila
+    inicializarFila(&filaPecas);
+    
+    // Preenche a fila inicial com 5 peças
+    printf("Inicializando fila com 5 peças...\n");
+    for (int i = 0; i < MAX; i++) {
+        Peca novaPeca = gerarPeca(ProximoId++);
+        inserir(&filaPecas, novaPeca);
+    }
+    
+    printf("Fila inicial criada com sucesso!\n");
+    
+    // Loop principal do programa
+    do {
+        mostrarFila(&filaPecas);
+        mostrarMenu();
+        scanf("%d", &Opcao);
+        
+        switch (Opcao) {
+            case 1: // Jogar peça (remover da frente)
+                {
+                    Peca pecaRemovida = remover(&filaPecas);
+                    if (pecaRemovida.Id != -1) {
+                        printf("Peça jogada: [%c %d]\n", pecaRemovida.Nome, pecaRemovida.Id);
+                        
+                        // Gera uma nova peça para manter a fila cheia (se possível)
+                        if (!filaCheia(&filaPecas)) {
+                            Peca novaPeca = gerarPeca(ProximoId++);
+                            inserir(&filaPecas, novaPeca);
+                            printf("Nova peça gerada e adicionada ao final da fila.\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 2: // Inserir nova peça
+                if (!filaCheia(&filaPecas)) {
+                    Peca novaPeca = gerarPeca(ProximoId++);
+                    inserir(&filaPecas, novaPeca);
+                    printf("Nova peça [%c %d] inserida no final da fila.\n", novaPeca.Nome, novaPeca.Id);
+                } else {
+                    printf("Não é possível inserir: fila cheia!\n");
+                }
+                break;
+                
+            case 0: // Sair
+                printf("Encerrando o programa...\n");
+                break;
+                
+            default:
+                printf("Opção inválida! Tente novamente.\n");
+                break;
+        }
+        
+    } while (Opcao != 0);
+    
 
     return 0;
 }
